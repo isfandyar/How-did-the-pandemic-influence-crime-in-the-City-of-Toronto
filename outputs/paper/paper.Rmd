@@ -1,12 +1,10 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
-author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: LINK."
+title: "How did the pandemic influence crime in the City of Toronto?"
+subtitle: "Analysis of Neighbourhood Crime Rate data of the City of Toronto from 2019 & 2020 "
+author: Isfandyar Virani
+thanks: "Code and data are available at: https://github.com/isfandyar/How-did-the-pandemic-influence-crime-in-the-City-of-Toronto"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "	In this report, the Neighbourhood Crime Rate data was pulled from the City of Toronto Open Portal to analyze neighbourhoods that were most affected by crime in 2019 and 2020. Upon analysis of the data, there is a significant decline in crime in the city of Toronto during the pandemic especially in communities with the highest crime rates. This is an important result as it can help policymakers in the government to take appropriate steps to reduce the crime rate post-pandemic."
 output:
   bookdown::pdf_document2
 toc: FALSE
@@ -16,78 +14,161 @@ bibliography: references.bib
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(opendatatoronto)
 library(tidyverse)
-library(palmerpenguins)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(knitr)
+library(vtable)
 ```
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. For instance, Section \@ref(data). R Markdown automatically makes the sections lower case and adds a dash to spaces to generate labels, for instance, Section \@ref(first-discussion-point). 
+COVID-19 has crippled the city of Toronto with lockdowns. These lockdowns have reportedly negatively impacted our mental & physical health [@kumar2021covid] After going through 2020, we can now observe the data that shows us how the city has done. The Toronto Police Services uses this data to fight crime strategically. In this paper, we look at how the pandemic impacted crime in the City of Toronto to understand better if the suffering from the 2020 lockdown had a silver lining.
 
+I conducted the analysis by looking at all the crime statistics in 2019 and 2020. This was done by bar graphs showing us visually a significant drop in case of counts and case rate for the 140 neighbourhoods of Toronto. Furthermore, I created a table that confirmed our graphs. Lastly, I ran a paired sample t-test on the difference in crime rates between 2018-19 & 2019-20 and found a high significance between the drop rates. Further, I explained how the data is acquired and biases associated with the data, and also looked in greater depth into potentially why there is a decline in crime in Toronto during the pandemic. 
 
 
 # Data
 
-Our data is of penguins (Figure \@ref(fig:bills)).
+To get better insights on crime in Toronto and find what neighbourhoods were most affected, I utilized the Neighbourhood Crime Rates data from the Toronto Open Data portal[@citetorontopoliceservice]. The raw dataset includes the data from 140 neighbourhoods of Toronto, population estimates of each neighbourhood provided by Environics Analytics, crime count, and crime rate. The crime count and crime rate included in the dataset are for Assault, Auto Theft, Break and Enter, Robbery, Theft Over, Homicide and Shooting & Firearm Discharges from the year 2014 to 2020. The crime rate is calculated per 100,000 population per year and the population figure reflects only the resident population of a region. 
 
-```{r bills, fig.cap="Bills of penguins", echo = FALSE}
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = FALSE) +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
+While this dataset contains all reported crimes in the City of Toronto, it isn’t an accurate representation of actual crime rates in the city as there are biases in the data. The temporary population such as commuters, homeless people, and business patrons are not included in the neighbourhood population count. The data is collected and maintained by the Toronto police services themselves, which is a bias that should also be considered when examining this data, as there is a history of racial bias in policing [@goff2012racial]. Furthermore, the dataset does not include racial data, nor does it includes crimes such as sexual assault which is among one of the most under-reported criminal offences, due to the stigma and history of women not believed by police [@McQueen2021] 
+
+The data analysis in this paper was done using `R` [@citeR]. The raw data was obtained in csv format from the City of Toronto Open Data Portal using R package `opendatatoronto` [@citeopendatatoronto]. This dataset was last updated on May 6, 2021. Using the R package `tidyverse` [@citetidyverse], and `dplyr` [@dplyr], I was able to clean and perform exploratory data analysis on the dataset.  I first excluded ID, OBJECTID, Hood_ID, and geometry points from the dataset and decided to only analyze data from 2019 and 2020 as I am most interested in the newest data available and I want to look at how the city crime differs in the pandemic year compared to the year before the pandemic. However, the COVID-19 pandemic lockdown measures begin in March of 2020 [@rodrigues_2020], therefore the analysis of 2020 includes a few months that weren’t influenced by the pandemic. 
+
+To better understand how the crime count, crime rate, and the population varies, I created a summary statistic table (Table \@ref(tab:tab1)) that showcases the Mean, Std. Dev, Min, Max, Pctl. 25 & Pctl. 75 of data from 2019 & 2020 by using `st` function from R package `vtable` [@vtable] and `kable` [@kableExtra] function from knitr package. Furthermore, using the knitr package again to create table (Table \@ref(tab:tab2)) to show neighbourhoods with the most number of crimes and crime rates in Toronto in 2019 & 2020 (Table \@ref(tab:tab2)).
+
+```{r, include = FALSE}
+
+toronto_crime_data_2019 <- read_csv(here::here("inputs/data/toronto_crime_data_2019.csv"))
+toronto_crime_data_2020 <- read_csv(here::here("inputs/data/toronto_crime_data_2020.csv"))
+
+toronto_crime_sum_2020 <- toronto_crime_data_2020 %>% group_by(Neighbourhood) %>% summarise(Total_crimes = sum(Assault_2020,
+                                                                                     AutoTheft_2020,
+                                                                                     BreakAndEnter_2020,
+                                                                                     Robbery_2020,
+                                                                                     TheftOver_2020,
+                                                                                     Homicide_2020,
+                                                                                     Shootings_2020)) %>% arrange(desc(Total_crimes))
+
+
+toronto_crime_sum_2019 <- toronto_crime_data_2019 %>% group_by(Neighbourhood) %>% summarise(Total_crimes = sum(Assault_2019,
+                                                                                                               AutoTheft_2019,
+                                                                                                               BreakAndEnter_2019,
+                                                                                                               Robbery_2019,
+                                                                                                               TheftOver_2019,
+                                                                                                               Homicide_2019,
+                                                                                                               Shootings_2019)) %>% arrange(desc(Total_crimes)) 
+Toronto_Total_crime_rate_2020 <- toronto_crime_data_2020 %>% group_by(Neighbourhood,F2020_Population_Projection) %>% summarise(Total_crime_rate = sum(Assault_Rate2020,
+                                                                                         AutoTheft_Rate2020,
+                                                                                         BreakAndEnter_Rate2020,
+                                                                                         Robbery_Rate2020,
+                                                                                         TheftOver_Rate2020,
+                                                                                         Homicide_Rate2020,
+                                                                                         Shootings_Rate2020)) %>% arrange(desc(Total_crime_rate))
+
+
+
+
+Toronto_Total_crime_rate_2019 <- toronto_crime_data_2019 %>% group_by(Neighbourhood,F2020_Population_Projection) %>% summarise(Total_crime_rate = sum(Assault_Rate2019,
+                                                                                         AutoTheft_Rate2019,
+                                                                                         BreakAndEnter_Rate2019,
+                                                                                         Robbery_Rate2019,
+                                                                                         TheftOver_Rate2019,
+                                                                                         Homicide_Rate2019,
+                                                                                         Shootings_Rate2019)) %>% arrange(desc(Total_crime_rate))
+
+
+
+
+
+Toronto_2019 <- merge(toronto_crime_sum_2019, Toronto_Total_crime_rate_2019, by= 'Neighbourhood')
+Toronto_2020 <- merge(toronto_crime_sum_2020, Toronto_Total_crime_rate_2020, by= 'Neighbourhood')
+
+Toronto_19_20 <- merge(Toronto_2019, Toronto_2020, by = c('Neighbourhood', 'F2020_Population_Projection'))
+names(Toronto_19_20)[names(Toronto_19_20) == 'Total_crimes.x'] <- 'Crime Count (2019)'
+names(Toronto_19_20)[names(Toronto_19_20) == 'Total_crimes.y'] <- 'Crime Count (2020)'
+names(Toronto_19_20)[names(Toronto_19_20) == 'Total_crime_rate.x'] <- 'Crime Rate (2019)'
+names(Toronto_19_20)[names(Toronto_19_20) == 'Total_crime_rate.y'] <- 'Crime Rate (2020)'
+names(Toronto_19_20)[names(Toronto_19_20) == 'F2020_Population_Projection'] <- 'Population Projection (2020)'
+
 ```
 
-Talk more about it.
 
-Also bills and their average (Figure \@ref(fig:billssssss)). (Notice how you can change the height and width so they don't take the whole page?)
-
-```{r billssssss, fig.cap="More bills of penguins", echo = FALSE, fig.width=8, fig.height=4}
-
-# This needs to be about the random data tha tI sasmpled?
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = FALSE) +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
+```{r tab1, echo=FALSE}
+st(Toronto_19_20,  title = 'Toronto Neighbourhood Crime Summary Statistics', out = 'kable')
 ```
 
-Talk way more about it. 
+
+Also, by using the selected neighbourhoods in Table 2 & Table 3, I created a graphs ((Figure \@ref(fig:fig1)) & (Figure \@ref(fig:fig2))) using ggplot [@citeggplot2] library to further understand how the neighbourhood population may factor higher crime in the city.
+
+```{r fig1, echo=FALSE, fig.cap='Toronto Total Reported Crime (2019-2020)', fig.width=5, fig.height=3, message=FALSE}
+Toronto_total_crime_2020 <- toronto_crime_sum_2020 %>% summarise(Total = sum(Total_crimes))
+Toronto_total_crime_2019 <- toronto_crime_sum_2019 %>% summarise(Total = sum(Total_crimes))
+TotalCrime <- tibble(Year = c('2019', '2020'), TotalCrime = c(Toronto_total_crime_2019$Total, Toronto_total_crime_2020$Total))
+
+ggplot(TotalCrime, aes(fill=Year, y=TotalCrime, x=Year)) +
+  geom_bar(position='dodge', stat='identity') +
+  labs(x = 'Year',
+       y = 'Total reported crimes',
+       fill = 'Year',
+       title = 'Toronto Total Reported Crime (2019-2020)',
+       subtitle = 'The sum of all crimes reported') +
+  scale_fill_manual(values=c('blue','plum'))
+
+
+```
+
+# Results & Discussion
+
+```{r, include=FALSE}
+
+CrimeRateDif_19_20 <-  Toronto_19_20$`Crime Rate (2020)` - Toronto_19_20$`Crime Rate (2019)`
+
+raw_data <- read_csv(here::here("inputs/data/raw_data.csv"))
+
+data18 <- raw_data %>% group_by(Neighbourhood) %>% summarise(Total_crime_rate = sum(Assault_2018,
+                                                                                     AutoTheft_Rate2018,
+                                                                                     BreakAndEnter_Rate2018,
+                                                                                     Robbery_Rate2018,
+                                                                                     TheftOver_Rate2018,
+                                                                                     Homicide_Rate2018,
+                                                                                     Shootings_Rate2018)) %>% arrange(desc(Total_crime_rate))
+CrimeRateDif_18_19<- Toronto_19_20$`Crime Rate (2019)` - data18$Total_crime_rate
+
+
+#t.test(CrimeRateDif_19_20, CrimeRateDif_18_19, paired=TRUE)
+
+
+mean_CrimeRateDif_19_20 <- round(mean(CrimeRateDif_19_20),2)
+sd_CrimeRateDif_19_20 <- round(sd(CrimeRateDif_19_20),2)
+
+mean_CrimeRateDif_18_19 <- round(mean(CrimeRateDif_18_19),2)
+sd_CrimeRateDif_18_19 <- round(sd(CrimeRateDif_18_19),2)
+
+
+t_statistic <- t.test(CrimeRateDif_19_20, CrimeRateDif_18_19, paired=TRUE)$statistic
+p.value_ttest <- t.test(CrimeRateDif_19_20, CrimeRateDif_18_19, paired=TRUE)$p.value
+parameter_ttest <- t.test(CrimeRateDif_19_20, CrimeRateDif_18_19, paired=TRUE)$parameter
+```
+
+
+From (Figure \@ref(fig:fig1)), we can observe that there is a drop in the total number of crimes in the city of Toronto. This drop is by 4915 (12.4%) counts of reported crime. Further, looking at (Figure \@ref(fig:fig2)), (Figure \@ref(fig:fig3)), (Figure \@ref(fig:fig4)), & (Figure \@ref(fig:fig5)), we can observe that the number of crimes counts and rates have dropped when we compare 2019 to 2020. Also, by looking at Table 1, we can observe that there is a difference of 178.01 between crime rates of 2019 & 2020. 
+
+A paired-sampled t-test was conduced to compare the difference in crime rate of Toronto neighbourhoods between 2018-19 & 2019-20. There was a significant difference in crime-rate for 2018-19 (M = `r mean_CrimeRateDif_18_19`, SD = `r sd_CrimeRateDif_18_19`) and 2019-20 (M = `r mean_CrimeRateDif_19_20`, SD = `r sd_CrimeRateDif_19_20`);t(`parameter_ttest`) = `r t_statistic`, p = `r p.value_ttest`
+
+The drop in crime rates can be linked to the government providing money to assist the population, known as CERB [@Johnson2020]. As CERB was helping people in poverty, the reason to do crime will be reduced as basic needs were being met. [@Segal2021] It can also be linked to lockdowns making it so fewer people were outside, resulting in fewer crimes. [@Hodgkinson2022]
+
+However, even though the number of crimes reported seems lower, there have been numerous reports that during the pandemic, there has been a rise in domestic abuse [@cbcnews_2020] & hate crimes which this data doesn’t cover [@Gray2021].
 
 
 
-# Model
 
-\begin{equation}
-Pr(\theta | y) = \frac{Pr(y | \theta) Pr(\theta)}{Pr(y)}  (\#eq:bayes)
-\end{equation}
+# Conclusion
 
-Equation \@ref(eq:bayes) seems useful, eh?
-
-Here's a dumb example of how to use some references: In paper we run our analysis in `R` [@citeR]. We also use the `tidyverse` which was written by @thereferencecanbewhatever If we were interested in baseball data then @citeLahman could be useful. 
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
-
-# Results
-
-# Discussion
-
-## First discussion point
-
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
-
-## Second discussion point
-
-## Third discussion point
-
-## Weaknesses and next steps
-
-Weaknesses and next steps should also be included.
+In this paper, we looked at crime cases and crime rates of 140 neighbourhoods of Toronto and found that there has been a significant drop in crime in Toronto. We determined that the pandemic has an effect on violent crimes, but also noted that the dataset by the Toronto police department doesn’t look at all crimes, such as domestic abuse, sexual assault, and hate crimes. 
 
 \newpage
 
@@ -95,8 +176,77 @@ Weaknesses and next steps should also be included.
 
 # Appendix {-}
 
+```{r fig2, echo=FALSE, fig.cap='Top 10 Toronto Neighbourhoods with highest number of reported crimes in 2019', fig.width=9, fig.height=3, message=FALSE}
+toronto_crime_data_2019 %>% group_by(Neighbourhood, F2020_Population_Projection) %>% summarise(Total_crimes = sum(Assault_2019,
+                                                                                                                  AutoTheft_2019,
+                                                                                                                  BreakAndEnter_2019,
+                                                                                                                  Robbery_2019,
+                                                                                                                  TheftOver_2019,
+                                                                                                                  Homicide_2019,
+                                                                                                                  Shootings_2019)) %>% arrange(desc(Total_crimes)) %>% head(10) %>%
+  ggplot(aes(x = reorder(Neighbourhood, Total_crimes) , y = Total_crimes , fill = F2020_Population_Projection)) +
+  geom_bar(stat = 'identity', position = position_dodge()) + coord_flip() +
+  labs(x = 'Neighbourhood', y = 'Crime rate', fill = 'Population(2020)', title = 'Toronto Total Crime - 2019', subtitle = 'Toronto Neighbourhoods with highest number of reported crimes in 2019') +
+  theme(axis.text.x =  element_text(angle = 27))  +
+  scale_fill_gradient2(low='orange', mid='snow', high='blue')
 
-# Additional details
+
+
+
+```
+
+
+```{r fig3, echo=FALSE, fig.cap='Top 10 Toronto Neighbourhoods with highest number of reported crimes in 2019', fig.width=9, fig.height=3, message=FALSE}
+
+toronto_crime_data_2020 %>% group_by(Neighbourhood, F2020_Population_Projection) %>% summarise(Total_crimes = sum(Assault_2020,
+                                                                                     AutoTheft_2020,
+                                                                                     BreakAndEnter_2020,
+                                                                                     Robbery_2020,
+                                                                                     TheftOver_2020,
+                                                                                     Homicide_2020,
+                                                                                     Shootings_2020)) %>% arrange(desc(Total_crimes)) %>% head(10) %>%
+  ggplot(aes(x = reorder(Neighbourhood, Total_crimes) , y = Total_crimes , fill = F2020_Population_Projection)) +
+  geom_bar(stat = 'identity', position = position_dodge()) + coord_flip() +
+  labs(x = 'Neighbourhood', y = 'Crime rate', fill = 'Population(2020)', title = 'Toronto Total Crime - 2020', subtitle = 'Toronto Neighbourhoods with highest number of reported crimes in 2019') +
+  theme(axis.text.x =  element_text(angle = 27))  +
+  scale_fill_gradient2(low='orange', mid='snow', high='blue')
+```
+
+```{r tab2, echo=FALSE}
+
+toronto_crime_sum <- cbind(toronto_crime_sum_2019,toronto_crime_sum_2020)
+colnames(toronto_crime_sum) <- c('Neighbourhood - 2019', 'Crime - 2019', 'Neighbourhood - 2020', 'Crime - 2020')
+toronto_crime_sum %>% head(10) %>% knitr::kable(caption = "Top 10 neighbourhoods with the most number of crimes in Toronto in 2019", align = c('l', 'l', 'l', 'l'))
+```
+
+
+```{r fig4, echo = FALSE, fig.cap= 'Top 10 Toronto Neighbourhoods with highest crime rates in 2020', fig.width=9, fig.height=3, message=FALSE}
+
+Toronto_Total_crime_rate_2020 %>% head(10) %>% 
+  ggplot(aes(x = reorder(Neighbourhood, Total_crime_rate) , y = Total_crime_rate , fill = F2020_Population_Projection)) +
+  geom_bar(stat = 'identity', position = position_dodge()) + coord_flip() +
+  labs(x = 'Neighbourhood', y = 'Crime rate', fill = 'Population(2020)',title = 'Toronto Crime Rate - 2020', subtitle = 'Toronto Neighbourhoods with highest crime rates in 2020') +
+  theme(axis.text.x =  element_text(angle = 27))  +
+  scale_fill_gradient2(low='orange', mid='snow', high='blue')
+
+
+
+
+```
+
+
+```{r fig5, echo = FALSE, fig.cap='Top 10 Toronto Neighbourhoods with highest crime rates in 2019', fig.width=9, fig.height=3, message=FALSE}
+Toronto_Total_crime_rate_2019 %>% head(10) %>% 
+  ggplot(aes(x = reorder(Neighbourhood, Total_crime_rate) , y = Total_crime_rate , fill = F2020_Population_Projection)) +
+  geom_bar(stat = 'identity', position = position_dodge()) + coord_flip() +
+  labs(x = 'Neighbourhood', y = 'Crime rate', fill = 'Population(2020)', title = 'Toronto Crime Rate - 2019', subtitle = 'Toronto Neighbourhoods with highest crime rates in 2019') +
+  theme(axis.text.x =  element_text(angle = 27))  +
+  scale_fill_gradient2(low='orange', mid='snow', high='blue')
+
+```
+
+
+
 
 
 \newpage
