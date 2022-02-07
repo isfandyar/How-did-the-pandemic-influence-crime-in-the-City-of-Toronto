@@ -6,7 +6,7 @@
 
 ## Overview of the paper
 
-This repository explores neighbourhood crime statistics of the City of Toronto during 2019 & 2020 using the Neighbourhood Crime Rate data was pulled from the City of Toronto Open Portal.  
+This repository explores neighbourhood crime statistics of the City of Toronto during 2019 & 2020 using the Neighbourhood Crime Rate data was pulled from the City of Toronto Open Portal. The goal is to see how the pandemic year (2020) differs from the non-pandemic year (2019). 
 
 ## File structure
 
